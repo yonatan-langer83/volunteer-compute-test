@@ -51,6 +51,21 @@ tasks:
       No dependency was added. No file outside `pantry_shifts/shifts.py`
       and `tests/test_shifts.py` changed.
     estimatedCostUsd: 0.08
+    goal: Make shift_hours count shifts that cross midnight forward, so 21:00-01:00 is 4.0 hours.
+    size: small
+    tests:
+      - "git clone https://github.com/yonatan-langer83/volunteer-compute-test && cd volunteer-compute-test"
+      - "python -m pip install -e \".[dev]\""
+      - "python -m pytest"
+    do:
+      - pantry_shifts/shifts.py
+      - tests/test_shifts.py
+    don't:
+      - "Do not treat equal start and end times as 24 hours."
+      - "Do not add a dependency."
+      - "Do not edit AGENTS.md, README.md (unless named in do), volunteer-compute.yaml or anything in .github/."
+      - "Do not open a pull request yourself. Submit the diff with submit_result; the project opens the pull request."
+    deliverable: "One unified diff (git diff) of only the files in do, submitted with submit_result, plus a summary that restates the acceptance criteria and pastes the full python -m pytest output."
 
   - id: add-overlap-detection
     title: Detect double-booked volunteers
@@ -113,6 +128,22 @@ tasks:
       No dependency was added. No file other than `pantry_shifts/schedule.py`
       and `tests/test_overlaps.py` changed.
     estimatedCostUsd: 0.28
+    goal: Add find_overlaps so the pantry can see when one volunteer is double-booked on the same day.
+    size: medium
+    tests:
+      - "git clone https://github.com/yonatan-langer83/volunteer-compute-test && cd volunteer-compute-test"
+      - "python -m pip install -e \".[dev]\""
+      - "python -m pytest"
+    do:
+      - pantry_shifts/schedule.py
+      - tests/test_overlaps.py (new file)
+    don't:
+      - "Do not change validate_schedule."
+      - "Do not change pantry_shifts/shifts.py."
+      - "Do not add a dependency."
+      - "Do not edit AGENTS.md, README.md (unless named in do), volunteer-compute.yaml or anything in .github/."
+      - "Do not open a pull request yourself. Submit the diff with submit_result; the project opens the pull request."
+    deliverable: "One unified diff (git diff) of only the files in do, submitted with submit_result, plus a summary that restates the acceptance criteria and pastes the full python -m pytest output."
 
   - id: document-shift-rules
     title: Document the shift rules
@@ -150,6 +181,20 @@ tasks:
       bug is still open.
       No other file changed. `python -m pytest` still exits 0.
     estimatedCostUsd: 0.03
+    goal: Explain the shift rules in README.md for pantry coordinators who do not read code.
+    size: small
+    tests:
+      - "git clone https://github.com/yonatan-langer83/volunteer-compute-test && cd volunteer-compute-test"
+      - "python -m pip install -e \".[dev]\""
+      - "python -m pytest"
+    do:
+      - README.md
+    don't:
+      - "Do not change any code or tests."
+      - "Do not add a dependency."
+      - "Do not edit AGENTS.md, README.md (unless named in do), volunteer-compute.yaml or anything in .github/."
+      - "Do not open a pull request yourself. Submit the diff with submit_result; the project opens the pull request."
+    deliverable: "One unified diff (git diff) of only the files in do, submitted with submit_result, plus a summary that restates the acceptance criteria and pastes the full python -m pytest output."
 
   - id: report-schedule-overlaps
     title: Report overlaps on a schedule
@@ -208,6 +253,21 @@ tasks:
       No dependency was added. No file other than `pantry_shifts/schedule.py`
       and `tests/test_schedule.py` changed.
     estimatedCostUsd: 0.12
+    goal: Make validate_schedule also report double-bookings, using find_overlaps.
+    size: medium
+    tests:
+      - "git clone https://github.com/yonatan-langer83/volunteer-compute-test && cd volunteer-compute-test"
+      - "python -m pip install -e \".[dev]\""
+      - "python -m pytest"
+    do:
+      - pantry_shifts/schedule.py
+      - tests/test_schedule.py
+    don't:
+      - "Do not reimplement interval math; use find_overlaps."
+      - "Do not add a dependency."
+      - "Do not edit AGENTS.md, README.md (unless named in do), volunteer-compute.yaml or anything in .github/."
+      - "Do not open a pull request yourself. Submit the diff with submit_result; the project opens the pull request."
+    deliverable: "One unified diff (git diff) of only the files in do, submitted with submit_result, plus a summary that restates the acceptance criteria and pastes the full python -m pytest output."
 
   - id: extract-allowed-roles
     title: Extract the allowed-role catalog
@@ -235,3 +295,19 @@ tasks:
       No dependency was added. No file other than `pantry_shifts/shifts.py`
       changed.
     estimatedCostUsd: 0.04
+    goal: Move the allowed role names into one ALLOWED_ROLES frozenset that validation reads from.
+    size: small
+    tests:
+      - "git clone https://github.com/yonatan-langer83/volunteer-compute-test && cd volunteer-compute-test"
+      - "python -m pip install -e \".[dev]\""
+      - "python -m pytest"
+    do:
+      - pantry_shifts/shifts.py
+    don't:
+      - "Do not edit tests."
+      - "Do not export ALLOWED_ROLES from pantry_shifts/__init__.py."
+      - "Do not change any other validation behavior."
+      - "Do not add a dependency."
+      - "Do not edit AGENTS.md, README.md (unless named in do), volunteer-compute.yaml or anything in .github/."
+      - "Do not open a pull request yourself. Submit the diff with submit_result; the project opens the pull request."
+    deliverable: "One unified diff (git diff) of only the files in do, submitted with submit_result, plus a summary that restates the acceptance criteria and pastes the full python -m pytest output."

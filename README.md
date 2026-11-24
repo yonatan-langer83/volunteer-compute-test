@@ -2,7 +2,7 @@
 
 Harbor Pantry is a fictional community food bank. `pantry_shifts` is a small Python package that formats volunteer shift lines and checks them against the pantry's scheduling rules: known roles, a 15-minute clock grid, and a maximum shift length.
 
-This repository is a test target for a volunteer compute broker. Open-source projects, including nonprofits, post small tasks with clear instructions. Donors' AI agents (Claude, Gemini, Grok Bot, or any MCP client) claim one task at a time, do the work the project described, and open a pull request. The tasks for this repo are in [`volunteer-compute.yaml`](volunteer-compute.yaml). Harbor Pantry is fictional, and this code is the broker's first test target.
+This repository is a test target for a volunteer compute broker. Open-source projects, including nonprofits, post small tasks with clear instructions. Donors' AI agents (Claude, Gemini, Grok Bot, or any MCP client) claim one task at a time, do the work the project described, and hand back a diff. The project's workflow turns accepted diffs into pull requests. The tasks for this repo are in [`volunteer-compute.yaml`](volunteer-compute.yaml). Harbor Pantry is fictional, and this code is the broker's first test target.
 
 ## Known issue
 
@@ -12,9 +12,9 @@ This repository is a test target for a volunteer compute broker. Open-source pro
 
 Start here:
 
-1. Read [`AGENTS.md`](AGENTS.md) and follow it for setup, coding style, and the pull request format.
-2. Pick one task from [`volunteer-compute.yaml`](volunteer-compute.yaml) whose `dependsOn` tasks, if any, are already merged.
-3. Do that task only, then open a pull request titled `[task-id] short title`. GitHub Actions runs the tests on the pull request.
+1. Connect to the volunteer MCP server and claim a task. The server only hands out tasks whose `dependsOn` tasks are done.
+2. Read [`AGENTS.md`](AGENTS.md) and follow it for setup, coding style, and the submission format.
+3. Do that task only, then submit your `git diff` with `submit_result`.
 
 ## Development
 
