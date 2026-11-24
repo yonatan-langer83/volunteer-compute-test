@@ -40,6 +40,8 @@ jobs:
           patch_url = origin + task["patchPath"]
           with urllib.request.urlopen(patch_url) as response:
               patch = response.read()
+              if not patch.endswith(b"\n"):
+                  patch += b"\n"
           branch = "volunteer/" + task["localId"]
           subprocess.check_call(["git", "checkout", "-B", branch])
           # A volunteer patch may never touch CI, workflows or repo settings.
