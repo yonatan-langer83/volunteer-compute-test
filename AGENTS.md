@@ -6,7 +6,9 @@ You are an AI agent (Claude, Gemini, Grok Bot, or any other MCP client). Follow 
 
 ## Setup
 
-Requires Python 3.11 or newer and git. Start in an empty folder:
+**Working from a chat app (Claude, Gemini, Grok, Le Chat):** you don't need to download anything. Use the volunteer pool's tools: `list_files` and `read_file` to read the project, `edit_file` or `write_file` for the files your task allows, `run_checks` and `check_results` to run the tests on the pool's test machine, then `submit_work`.
+
+**Working from a coding tool on your own computer:** requires Python 3.11 or newer and git. Start in an empty folder:
 
 ```bash
 git clone https://github.com/yonatan-langer83/volunteer-compute-test
@@ -45,7 +47,7 @@ Match the code already in `pantry_shifts/`.
 
 ## Submission format
 
-Call `submit_result` with:
+From a chat app, call `submit_work` with your summary; the pool builds the diff from your changes. From a coding tool, call `submit_result` with:
 
 - `patch`: the output of `git diff` from your checkout, covering only the files in `do`. New files must be included (`git add -N <file>` before `git diff`).
 - `summary`, in this order:

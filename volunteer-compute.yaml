@@ -3,7 +3,11 @@ project:
   name: harbor-pantry
   github: https://github.com/yonatan-langer83/volunteer-compute-test
   nonprofit: true
-  orgUrl: https://example.org/harbor-pantry
+  # How the volunteer pool runs this project's checks on a volunteer's work,
+  # from the repository root, on a fresh test machine with Python 3.
+  checks:
+    setup: python -m pip install -q -e ".[dev]"
+    run: python -m pytest -q
 tasks:
   - id: fix-overnight-hours
     title: Count overnight shifts forward
@@ -64,8 +68,8 @@ tasks:
       - "Do not treat equal start and end times as 24 hours."
       - "Do not add a dependency."
       - "Do not edit AGENTS.md, README.md (unless named in do), volunteer-compute.yaml or anything in .github/."
-      - "Do not open a pull request yourself. Submit the diff with submit_result; the project opens the pull request."
-    deliverable: "One unified diff (git diff) of only the files in do, submitted with submit_result, plus a summary that restates the acceptance criteria and pastes the full python -m pytest output."
+      - "Do not open a pull request yourself. Hand in with submit_work (or submit_result from a coding tool); the project opens the pull request."
+    deliverable: "One unified diff (git diff) of only the files in do, submitted with submit_work or submit_result, plus a summary that restates the acceptance criteria and pastes the full python -m pytest output."
 
   - id: add-overlap-detection
     title: Detect double-booked volunteers
@@ -142,10 +146,11 @@ tasks:
       - "Do not change pantry_shifts/shifts.py."
       - "Do not add a dependency."
       - "Do not edit AGENTS.md, README.md (unless named in do), volunteer-compute.yaml or anything in .github/."
-      - "Do not open a pull request yourself. Submit the diff with submit_result; the project opens the pull request."
-    deliverable: "One unified diff (git diff) of only the files in do, submitted with submit_result, plus a summary that restates the acceptance criteria and pastes the full python -m pytest output."
+      - "Do not open a pull request yourself. Hand in with submit_work (or submit_result from a coding tool); the project opens the pull request."
+    deliverable: "One unified diff (git diff) of only the files in do, submitted with submit_work or submit_result, plus a summary that restates the acceptance criteria and pastes the full python -m pytest output."
 
   - id: document-shift-rules
+    kind: writing
     title: Document the shift rules
     instructions: |
       Add a coordinator-facing section to `README.md`. Touch only that file.
@@ -193,8 +198,8 @@ tasks:
       - "Do not change any code or tests."
       - "Do not add a dependency."
       - "Do not edit AGENTS.md, README.md (unless named in do), volunteer-compute.yaml or anything in .github/."
-      - "Do not open a pull request yourself. Submit the diff with submit_result; the project opens the pull request."
-    deliverable: "One unified diff (git diff) of only the files in do, submitted with submit_result, plus a summary that restates the acceptance criteria and pastes the full python -m pytest output."
+      - "Do not open a pull request yourself. Hand in with submit_work (or submit_result from a coding tool); the project opens the pull request."
+    deliverable: "One unified diff (git diff) of only the files in do, submitted with submit_work or submit_result, plus a summary that restates the acceptance criteria and pastes the full python -m pytest output."
 
   - id: report-schedule-overlaps
     title: Report overlaps on a schedule
@@ -266,8 +271,8 @@ tasks:
       - "Do not reimplement interval math; use find_overlaps."
       - "Do not add a dependency."
       - "Do not edit AGENTS.md, README.md (unless named in do), volunteer-compute.yaml or anything in .github/."
-      - "Do not open a pull request yourself. Submit the diff with submit_result; the project opens the pull request."
-    deliverable: "One unified diff (git diff) of only the files in do, submitted with submit_result, plus a summary that restates the acceptance criteria and pastes the full python -m pytest output."
+      - "Do not open a pull request yourself. Hand in with submit_work (or submit_result from a coding tool); the project opens the pull request."
+    deliverable: "One unified diff (git diff) of only the files in do, submitted with submit_work or submit_result, plus a summary that restates the acceptance criteria and pastes the full python -m pytest output."
 
   - id: extract-allowed-roles
     title: Extract the allowed-role catalog
@@ -309,5 +314,30 @@ tasks:
       - "Do not change any other validation behavior."
       - "Do not add a dependency."
       - "Do not edit AGENTS.md, README.md (unless named in do), volunteer-compute.yaml or anything in .github/."
-      - "Do not open a pull request yourself. Submit the diff with submit_result; the project opens the pull request."
-    deliverable: "One unified diff (git diff) of only the files in do, submitted with submit_result, plus a summary that restates the acceptance criteria and pastes the full python -m pytest output."
+      - "Do not open a pull request yourself. Hand in with submit_work (or submit_result from a coding tool); the project opens the pull request."
+    deliverable: "One unified diff (git diff) of only the files in do, submitted with submit_work or submit_result, plus a summary that restates the acceptance criteria and pastes the full python -m pytest output."
+  - id: write-volunteer-welcome
+    kind: writing
+    title: Write a first-day note for new volunteers
+    goal: Give a new pantry volunteer everything they need for their first shift on one page.
+    size: small
+    instructions: |
+      Create `docs/first-shift.md` (a new file) for people volunteering at Harbor Pantry for the first time.
+      Read `README.md` and `pantry_shifts/shifts.py` first so the shift rules you describe match the code.
+      Cover, in this order: what to bring, how shifts work (start and end times, the 15-minute grid, the
+      longest shift allowed, overnight closers), the roles that exist, and who to ask for help.
+      Write in plain, friendly English for someone who has never volunteered before. No code.
+    acceptance: |
+      `docs/first-shift.md` exists and is under 400 words.
+      It uses the four headings in the order given.
+      Every shift rule it states matches `pantry_shifts/shifts.py`, including the 15-minute grid and the 8-hour limit.
+      It names every role that `pantry_shifts/shifts.py` allows.
+      No other file changed.
+    do:
+      - docs/first-shift.md (new file)
+    don't:
+      - "Do not change code, tests, README.md or any other file."
+      - "Do not invent rules that are not in the code."
+      - "Do not open a pull request yourself. Hand in with submit_work; the project opens the pull request."
+    deliverable: "The new Markdown file docs/first-shift.md, handed in with submit_work and a one-paragraph summary that restates the acceptance criteria."
+    estimatedCostUsd: 0.03
