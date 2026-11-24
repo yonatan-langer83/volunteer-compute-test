@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pantry-shifts"
+version = "0.1.0"
+description = "Format and validate volunteer shift schedules for Harbor Pantry, a community food bank."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2"]
+
+[tool.setuptools.packages.find]
+include = ["pantry_shifts*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
