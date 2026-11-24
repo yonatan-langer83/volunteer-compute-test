@@ -21,18 +21,17 @@ class Shift:
 def shift_hours(shift: Shift) -> float:
     """Return the shift length in hours.
 
-    Intended rule: when ``end`` is earlier than ``start``, the shift runs
-    past midnight and the length is the forward span across that boundary.
-    A shift that starts and ends at the same clock time is zero hours long.
-
-    Deliberate bug (task ``fix-overnight-hours``): a negative span is not
-    wrapped forward. A closer who works 21:00-01:00 is reported as -20.0
-    hours instead of 4.0. ``test_overnight_closer_is_four_hours`` covers
-    this and is marked ``xfail`` so the suite stays green until the fix.
+    When ``end`` is earlier than ``start``, the shift runs past midnight and
+    the length is the forward span across that boundary, so 21:00-01:00 is
+    4.0 hours. A shift that starts and ends at the same clock time is zero
+    hours long, not 24.
     """
     start_minutes = shift.start.hour * 60 + shift.start.minute
     end_minutes = shift.end.hour * 60 + shift.end.minute
-    return (end_minutes - start_minutes) / 60.0
+    delta = end_minutes - start_minutes
+    if delta < 0:
+        delta += 24 * 60
+    return delta / 60
 
 
 def format_shift(shift: Shift) -> str:
