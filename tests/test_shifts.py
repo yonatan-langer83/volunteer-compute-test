@@ -2,8 +2,6 @@
 
 from datetime import time
 
-import pytest
-
 from pantry_shifts import Shift, format_shift, shift_hours, validate_shift
 
 
@@ -58,14 +56,13 @@ def test_zero_length_is_zero_hours():
     assert validate_shift(shift) == ["shift must be longer than 0 hours"]
 
 
-@pytest.mark.xfail(
-    reason=(
-        "shift_hours does not wrap past midnight, so 21:00-01:00 is "
-        "negative instead of 4.0 (task fix-overnight-hours)"
-    ),
-    strict=True,
-)
 def test_overnight_closer_is_four_hours():
     shift = Shift("Sam Rivera-Cole", "closer", time(21, 0), time(1, 0))
     assert shift_hours(shift) == 4.0
     assert validate_shift(shift) == []
+
+
+def test_overnight_overtime_is_rejected():
+    shift = Shift("Sam Rivera-Cole", "closer", time(21, 0), time(6, 0))
+    assert shift_hours(shift) == 9.0
+    assert validate_shift(shift) == ["shift must be at most 8 hours"]
