@@ -1,0 +1,65 @@
+name: Open a volunteer pull request
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * *"
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+jobs:
+  open:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply one accepted patch and open a pull request
+        env:
+          PROJECT_NAME: harbor-pantry
+          # The project's own test command. The patch must pass it before a PR opens.
+          TEST_COMMAND: python -m pip install -q -e ".[dev]" && python -m pytest -q
+          TEST_WORKFLOW: tests.yml
+          BROKER_ORIGIN: https://volunteer.apishelf.dev
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - << 'PY'
+          import json, os, subprocess, urllib.request
+          origin = os.environ["BROKER_ORIGIN"].rstrip("/")
+          name = os.environ["PROJECT_NAME"]
+          with urllib.request.urlopen(origin + "/public.json") as response:
+              board = json.load(response)
+          project = next((item for item in board["projects"] if item["name"] == name), None)
+          if not project:
+              raise SystemExit(f"no project named {name}")
+          task = next((item for item in project["tasks"] if item["state"] == "done" and item.get("patchPath") and not item.get("prUrl")), None)
+          if not task:
+              print("no accepted patch waiting for a pull request")
+              raise SystemExit(0)
+          patch_url = origin + task["patchPath"]
+          with urllib.request.urlopen(patch_url) as response:
+              patch = response.read()
+          branch = "volunteer/" + task["localId"]
+          subprocess.check_call(["git", "checkout", "-B", branch])
+          # A volunteer patch may never touch CI, workflows or repo settings.
+          files = subprocess.run(["git", "apply", "--numstat", "-"], input=patch, capture_output=True, check=True).stdout.decode()
+          for line in files.splitlines():
+              path = line.split("\t")[-1]
+              if path.startswith(".github/") or path.startswith(".git/"):
+                  raise SystemExit(f"refused: the patch touches {path}")
+          applied = subprocess.run(["git", "apply", "-"], input=patch)
+          if applied.returncode != 0:
+              raise SystemExit("git apply failed")
+          tests = subprocess.run(os.environ["TEST_COMMAND"], shell=True)
+          if tests.returncode != 0:
+              raise SystemExit("the patch fails the project's tests, so no pull request was opened")
+          subprocess.check_call(["git", "config", "user.email", "volunteer-bot@users.noreply.github.com"])
+          subprocess.check_call(["git", "config", "user.name", "volunteer"])
+          subprocess.check_call(["git", "add", "-A"])
+          subprocess.check_call(["git", "commit", "-m", f"[{task['localId']}] {task['title']}"])
+          subprocess.check_call(["git", "push", "--force-with-lease", "-u", "origin", branch])
+          body = "Opened from an accepted volunteer diff.\n\nRecord it with:\n\n```\nnpm run cli -- record-pr --task " + task["id"] + " --pr <pull-request-url>\n```\n"
+          subprocess.check_call(["gh", "pr", "create", "--title", f"[{task['localId']}] {task['title']}", "--body", body])
+          subprocess.check_call(["gh", "workflow", "run", os.environ["TEST_WORKFLOW"], "--ref", branch])
+          PY

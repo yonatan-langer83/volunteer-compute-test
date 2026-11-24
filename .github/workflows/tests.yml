@@ -2,6 +2,11 @@ name: tests
 
 on:
   pull_request:
+  push:
+    branches: [main]
+  # volunteer-apply.yml starts this by hand, because a pull request opened
+  # with GITHUB_TOKEN does not trigger pull_request workflows.
+  workflow_dispatch:
 
 jobs:
   test:
