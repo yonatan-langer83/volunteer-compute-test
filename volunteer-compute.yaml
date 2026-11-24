@@ -1,0 +1,237 @@
+schemaVersion: 1
+project:
+  name: harbor-pantry
+  github: https://github.com/yonatan-langer83/volunteer-compute-test
+  nonprofit: true
+  orgUrl: https://example.org/harbor-pantry
+tasks:
+  - id: fix-overnight-hours
+    title: Count overnight shifts forward
+    provider: anthropic
+    instructions: |
+      Fix the deliberate bug in `shift_hours` in `pantry_shifts/shifts.py`.
+
+      A shift whose end clock is earlier than its start clock runs past
+      midnight. Its length is the forward span: minutes from start to
+      midnight, plus minutes from midnight to end. A closer who works
+      21:00-01:00 is 4.0 hours. A closer who works 21:00-06:00 is 9.0 hours.
+
+      Use hour and minute only, which is what the function already uses.
+      Apply this formula and nothing broader:
+
+      delta = end_minutes - start_minutes
+      if delta < 0:
+          delta += 24 * 60
+      return delta / 60
+
+      Equal clock times stay 0 hours. Do not treat them as 24 hours.
+
+      `validate_shift` already trusts `shift_hours`, so the 21:00-01:00
+      closer becomes valid (role `closer`, on the 15-minute grid, 4 hours)
+      and the 21:00-06:00 closer is rejected only for length.
+
+      In `tests/test_shifts.py`:
+      - Remove the `pytest.mark.xfail` marker from
+        `test_overnight_closer_is_four_hours` and leave its assertions as
+        they are.
+      - Add `test_overnight_overtime_is_rejected`: a `closer` named
+        `Sam Rivera-Cole` from 21:00 to 06:00 has `shift_hours` of 9.0 and
+        `validate_shift` returns exactly
+        `["shift must be at most 8 hours"]`.
+
+      Touch only `pantry_shifts/shifts.py` and `tests/test_shifts.py`.
+    acceptance: |
+      `python -m pytest` exits 0.
+      `test_overnight_closer_is_four_hours` passes and has no xfail marker.
+      21:00-01:00 is 4.0 hours and `validate_shift` returns `[]`.
+      21:00-06:00 is 9.0 hours and is rejected with exactly
+      "shift must be at most 8 hours".
+      09:00-09:00 is still 0 hours and still invalid.
+      09:00-12:30 is still 3.5 hours.
+      No dependency was added. No file outside `pantry_shifts/shifts.py`
+      and `tests/test_shifts.py` changed.
+    estimatedCostUsd: 0.08
+
+  - id: add-overlap-detection
+    title: Detect double-booked volunteers
+    instructions: |
+      Add same-day double-booking detection. Two volunteers may work the
+      same hours. One volunteer may not.
+
+      Touch only `pantry_shifts/schedule.py` and a new file
+      `tests/test_overlaps.py`. Do not change `validate_schedule`. Do not
+      change `pantry_shifts/shifts.py`.
+
+      Add these functions to `pantry_shifts/schedule.py`:
+
+      `shifts_overlap(left: Shift, right: Shift) -> bool`
+      - Compare volunteer names with `strip()` and `casefold()`.
+        `Ada Lovelace` and `  ada lovelace` are the same person.
+        Different people never overlap.
+      - Treat each shift as a half-open minute interval `[start, end)`
+        using hour and minute only.
+      - They overlap when the intervals intersect: `start_a < end_b` and
+        `start_b < end_a`. Back-to-back shifts (one ends at 12:00, the next
+        starts at 12:00) do not overlap. An identical window does overlap.
+        A shift contained inside the other does overlap.
+      - If either shift has `end` minutes <= `start` minutes, raise
+        `ValueError("shift must start and end on the same day")`.
+
+      `find_overlaps(shifts: list[Shift]) -> list[tuple[int, int]]`
+      - If any shift has end minutes <= start minutes, raise the same
+        `ValueError` and return nothing.
+      - Otherwise return every pair of 0-based indexes `(i, j)` with
+        `i < j` whose shifts overlap, ordered by `i` then `j`.
+      - An empty list and a single same-day shift return `[]`.
+
+      Keep the minute conversion private to this module. Overnight shifts
+      stay out of scope: callers get `ValueError`.
+
+      Cover all of the following in `tests/test_overlaps.py` with these
+      inputs (roles can be any allowed role; times are same-day unless
+      noted):
+
+      - `Ada Lovelace` 09:00-12:00 and `Grace Hopper` 09:00-12:00 do not overlap.
+      - `Ada Lovelace` 09:00-12:00 and `Ada Lovelace` 11:00-14:00 overlap.
+      - `Ada Lovelace` 09:00-15:00 and `Ada Lovelace` 11:00-13:00 overlap.
+      - `Ada Lovelace` 09:00-12:00 and `Ada Lovelace` 12:00-15:00 do not overlap.
+      - `Ada Lovelace` 09:00-12:00 and `Ada Lovelace` 09:00-12:00 overlap.
+      - `Ada Lovelace` 09:00-12:00 and `  ada lovelace ` 09:00-12:00 overlap.
+      - These three shifts, in order: Ada 09:00-11:00, Ada 13:00-15:00,
+        Ada 10:00-14:00. `find_overlaps` returns `[(0, 2), (1, 2)]`.
+      - `find_overlaps([])` and a one-shift list return `[]`.
+      - `Sam Rivera-Cole` closer 21:00-01:00 raises
+        `ValueError` with message `shift must start and end on the same day`
+        from both `shifts_overlap` (paired with any same-day shift) and
+        `find_overlaps`.
+    acceptance: |
+      `python -m pytest` exits 0, including the new overlap tests.
+      `shifts_overlap` and `find_overlaps` follow the interval, name, order,
+      and `ValueError` rules in the instructions.
+      `validate_schedule` is unchanged and its existing tests still pass.
+      The overnight-hours xfail test is still xfailed.
+      No dependency was added. No file other than `pantry_shifts/schedule.py`
+      and `tests/test_overlaps.py` changed.
+    estimatedCostUsd: 0.28
+
+  - id: document-shift-rules
+    title: Document the shift rules
+    instructions: |
+      Add a coordinator-facing section to `README.md`. Touch only that file.
+
+      Insert a section titled exactly `## Shift rules` between `## Known issue`
+      and `## Volunteer agents`. Write it as short prose plus a bullet list
+      a pantry coordinator can read. Include every fact below, and put the
+      display example in backticks:
+
+      - `format_shift` prints
+        `Ada Lovelace | sorter | 09:00-12:30 (3.5h)`.
+        It does not validate.
+      - `validate_shift` returns a list of problems. An empty list means the
+        shift is valid.
+      - `validate_schedule` prefixes each problem with `shift N:` where N
+        starts at 1.
+      - Allowed roles are closer, driver, intake, and sorter.
+      - Start and end must sit on a 15-minute boundary, and seconds must be 0.
+      - Length must be greater than 0 hours and at most 8 hours.
+      - When the end clock is earlier than the start clock, the shift crosses
+        midnight and the length is the forward span. Equal clock times are
+        0 hours and are invalid.
+      - The midnight span is the intended rule. The code still has the bug
+        described under Known issue until `fix-overnight-hours` lands.
+
+      Leave every other README section as it is.
+    acceptance: |
+      `README.md` contains `## Shift rules` between `## Known issue` and
+      `## Volunteer agents`.
+      The section states the display example, the three functions, the four
+      roles, the 15-minute grid, the 0-to-8 hour bounds, and the midnight
+      rule, including that equal times are invalid and that the overnight
+      bug is still open.
+      No other file changed. `python -m pytest` still exits 0.
+    estimatedCostUsd: 0.03
+
+  - id: report-schedule-overlaps
+    title: Report overlaps on a schedule
+    dependsOn: [add-overlap-detection]
+    instructions: |
+      `add-overlap-detection` is merged. `pantry_shifts/schedule.py` now
+      provides `find_overlaps`. Use it. Do not reimplement interval math.
+
+      Update `validate_schedule` so a schedule of same-day shifts also
+      reports double-bookings. Touch only `pantry_shifts/schedule.py` and
+      `tests/test_schedule.py`.
+
+      Behavior:
+
+      - Keep the existing per-shift problems, still prefixed `shift N:` and
+        still in input order.
+      - A shift is same-day when its end hour/minute is greater than its
+        start hour/minute.
+      - When every shift in the list is same-day, call `find_overlaps` and
+        append one line per pair, after all per-shift problems, in the order
+        `find_overlaps` returns.
+      - Line format, with 1-based indexes:
+        `overlap: shifts {i} and {j} both book {name}`
+        `{name}` is `shifts[i].volunteer.strip()` (the earlier shift), with
+        the original casing kept.
+      - When the list is empty, or any shift is not same-day (zero length or
+        overnight), skip overlap detection and do not raise. Return the
+        per-shift problems only. `find_overlaps` raises `ValueError` on
+        those shifts; `validate_schedule` must not let that escape.
+
+      Add tests in `tests/test_schedule.py` for these cases, and keep the
+      existing tests passing:
+
+      - Ada Lovelace, sorter, 09:00-12:00 and Ada Lovelace, intake, 11:00-14:00
+        returns exactly
+        `["overlap: shifts 1 and 2 both book Ada Lovelace"]`.
+      - Shift 1 is `  Ada Lovelace`, sorter, 09:00-12:00. Shift 2 is
+        Ada Lovelace, chef, 11:00-14:00. The result is exactly
+        `["shift 2: role must be one of: closer, driver, intake, sorter",
+        "overlap: shifts 1 and 2 both book Ada Lovelace"]`.
+        The displayed name is `shifts[0].volunteer.strip()`, so the padding
+        is removed and the casing of the earlier shift is kept.
+      - Ada Lovelace 09:00-12:00 and Ada Lovelace 12:00-15:00 produce `[]`.
+      - Ada Lovelace 09:00-12:00 and Grace Hopper 09:00-12:00 produce `[]`.
+      - A schedule whose second shift is zero-length (`09:00-09:00`) does not
+        raise. Its result is only that shift's per-shift problems, with no
+        overlap line.
+    acceptance: |
+      `python -m pytest` exits 0.
+      Same-day double-bookings are reported with the exact
+      `overlap: shifts {i} and {j} both book {name}` line, after per-shift
+      problems, using `find_overlaps`.
+      Back-to-back shifts and different volunteers produce no overlap line.
+      A schedule containing a zero-length shift does not raise.
+      Existing schedule tests still pass.
+      No dependency was added. No file other than `pantry_shifts/schedule.py`
+      and `tests/test_schedule.py` changed.
+    estimatedCostUsd: 0.12
+
+  - id: extract-allowed-roles
+    title: Extract the allowed-role catalog
+    instructions: |
+      In `validate_shift` the allowed roles are a tuple literal inside the
+      function. Move that catalog to one module-level name in
+      `pantry_shifts/shifts.py`:
+
+      `ALLOWED_ROLES` is a `frozenset[str]` of `closer`, `driver`, `intake`,
+      and `sorter`.
+
+      `validate_shift` must read roles from `ALLOWED_ROLES`. The error string
+      stays exactly `role must be one of: closer, driver, intake, sorter`
+      (alphabetical, comma-space separated). Build that string from the
+      constant rather than from a second copy of the names.
+
+      Do not change any other validation behavior. Do not edit tests. Do not
+      export the constant from `pantry_shifts/__init__.py`. Touch only
+      `pantry_shifts/shifts.py`.
+    acceptance: |
+      `ALLOWED_ROLES` is a module-level `frozenset` in `pantry_shifts/shifts.py`
+      containing exactly closer, driver, intake, and sorter.
+      `validate_shift` uses it, and the role error string is unchanged.
+      `python -m pytest` exits 0 with the existing tests left untouched.
+      No dependency was added. No file other than `pantry_shifts/shifts.py`
+      changed.
+    estimatedCostUsd: 0.04
